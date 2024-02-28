@@ -257,6 +257,35 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		log.Error(err, "Failed to update Hub status")
 		return ctrl.Result{}, err
 	}
+
+	svc := &corev1.Service{}
+	err = r.Get(ctx, types.NamespacedName{Name: hub.Name, Namespace: hub.Namespace}, svc)
+	if err != nil && apierrors.IsNotFound(err) {
+		// Define a new service
+		_svc, err := r.serviceForHub(hub)
+		if err != nil {
+
+			return ctrl.Result{}, err
+		}
+
+		log.Info("Creating a new Service",
+			"Service.Namespace", _svc.Namespace, "Service.Name", _svc.Name)
+		if err = r.Create(ctx, _svc); err != nil {
+			log.Error(err, "Failed to create new Service",
+				"Service.Namespace", _svc.Namespace, "Service.Name", _svc.Name)
+			return ctrl.Result{}, err
+		}
+
+		// Service created successfully
+		// We will requeue the reconciliation so that we can ensure the state
+		// and move forward for the next operations
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+	} else if err != nil {
+		log.Error(err, "Failed to get Service")
+		// Let's return the error for the reconciliation be re-trigged again
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -294,8 +323,9 @@ func (r *HubReconciler) deploymentForHub(
 
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      hub.Name,
-			Namespace: hub.Namespace,
+			Name:        hub.Name,
+			Namespace:   hub.Namespace,
+			Annotations: hub.Annotations,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
@@ -418,6 +448,33 @@ func (r *HubReconciler) deploymentForHub(
 	return dep, nil
 }
 
+// serviceForHub returns a Hub Deployment object
+func (r *HubReconciler) serviceForHub(
+	hub *nodev1alpha1.Hub) (*corev1.Service, error) {
+	ls := labelsForHub(hub.Name)
+
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        hub.Name,
+			Namespace:   hub.Namespace,
+			Annotations: hub.Annotations,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{Name: "http", Protocol: corev1.ProtocolTCP, Port: 80, TargetPort: intstr.FromInt(80)},
+			},
+			Selector: ls,
+		},
+	}
+
+	// Set the ownerRef for the Service
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
+	if err := ctrl.SetControllerReference(hub, svc, r.Scheme); err != nil {
+		return nil, err
+	}
+	return svc, nil
+}
+
 // labelsForHub returns the labels for selecting the resources
 // More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 func labelsForHub(name string) map[string]string {
@@ -439,6 +496,7 @@ func labelsForHub(name string) map[string]string {
 //+kubebuilder:rbac:groups=node.rss3.io,resources=hubs/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 
 // SetupWithManager sets up the controller with the Manager.
@@ -446,5 +504,6 @@ func (r *HubReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nodev1alpha1.Hub{}).
 		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
 		Complete(r)
 }
