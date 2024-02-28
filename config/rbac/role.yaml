@@ -1,0 +1,84 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - broadcasters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - broadcasters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - broadcasters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - hubs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - hubs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - hubs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - indexers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - indexers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - node.rss3.io
+  resources:
+  - indexers/status
+  verbs:
+  - get
+  - patch
+  - update

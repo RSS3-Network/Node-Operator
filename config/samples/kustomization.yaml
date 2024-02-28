@@ -1,0 +1,6 @@
+## Append samples of your project ##
+resources:
+- node_v1alpha1_hub.yaml
+- node_v1alpha1_indexer.yaml
+- node_v1alpha1_broadcaster.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

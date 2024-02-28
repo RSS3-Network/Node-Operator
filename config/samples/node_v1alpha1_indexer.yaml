@@ -1,0 +1,12 @@
+apiVersion: node.rss3.io/v1alpha1
+kind: Indexer
+metadata:
+  labels:
+    app.kubernetes.io/name: indexer
+    app.kubernetes.io/instance: indexer-sample
+    app.kubernetes.io/part-of: node-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: node-operator
+  name: indexer-sample
+spec:
+  # TODO(user): Add fields here

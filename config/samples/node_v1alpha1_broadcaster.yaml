@@ -1,0 +1,12 @@
+apiVersion: node.rss3.io/v1alpha1
+kind: Broadcaster
+metadata:
+  labels:
+    app.kubernetes.io/name: broadcaster
+    app.kubernetes.io/instance: broadcaster-sample
+    app.kubernetes.io/part-of: node-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: node-operator
+  name: broadcaster-sample
+spec:
+  # TODO(user): Add fields here
