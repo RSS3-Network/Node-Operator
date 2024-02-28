@@ -9,4 +9,5 @@ metadata:
     app.kubernetes.io/created-by: node-operator
   name: hub-sample
 spec:
+  replicas: 1
   # TODO(user): Add fields here

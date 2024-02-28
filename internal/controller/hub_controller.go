@@ -241,7 +241,7 @@ func (r *HubReconciler) doFinalizerOperationsForHub(cr *nodev1alpha1.Hub) {
 func (r *HubReconciler) deploymentForHub(
 	hub *nodev1alpha1.Hub) (*appsv1.Deployment, error) {
 	ls := labelsForHub(hub.Name)
-	replicas := hub.Spec.Size
+	replicas := hub.Spec.Replicas
 
 	// Get the Operand image
 	image, err := imageForNode()

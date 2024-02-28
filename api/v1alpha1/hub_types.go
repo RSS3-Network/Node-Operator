@@ -29,7 +29,7 @@ type HubSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Size int32 `json:"size,omitempty"`
+	Replicas int32 `json:"size,omitempty"`
 	// Foo is an example field of Hub. Edit hub_types.go to remove/update
 	Foo string `json:"foo,omitempty"`
 }
