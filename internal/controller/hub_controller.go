@@ -292,41 +292,41 @@ func (r *HubReconciler) deploymentForHub(
 					//		},
 					//	},
 					//},
-					SecurityContext: &corev1.PodSecurityContext{
-						RunAsNonRoot: &[]bool{true}[0],
-						// IMPORTANT: seccomProfile was introduced with Kubernetes 1.19
-						// If you are looking for to produce solutions to be supported
-						// on lower versions you must remove this option.
-						SeccompProfile: &corev1.SeccompProfile{
-							Type: corev1.SeccompProfileTypeRuntimeDefault,
-						},
-					},
+					//SecurityContext: &corev1.PodSecurityContext{
+					//	RunAsNonRoot: &[]bool{true}[0],
+					//	// IMPORTANT: seccomProfile was introduced with Kubernetes 1.19
+					//	// If you are looking for to produce solutions to be supported
+					//	// on lower versions you must remove this option.
+					//	SeccompProfile: &corev1.SeccompProfile{
+					//		Type: corev1.SeccompProfileTypeRuntimeDefault,
+					//	},
+					//},
 					Containers: []corev1.Container{{
 						Image:           image,
 						Name:            "hub",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						// Ensure restrictive context for the container
 						// More info: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
-						SecurityContext: &corev1.SecurityContext{
-							// WARNING: Ensure that the image used defines an UserID in the Dockerfile
-							// otherwise the Pod will not run and will fail with "container has runAsNonRoot and image has non-numeric user"".
-							// If you want your workloads admitted in namespaces enforced with the restricted mode in OpenShift/OKD vendors
-							// then, you MUST ensure that the Dockerfile defines a User ID OR you MUST leave the "RunAsNonRoot" and
-							// "RunAsUser" fields empty.
-							RunAsNonRoot: &[]bool{true}[0],
-							// The hub image does not use a non-zero numeric user as the default user.
-							// Due to RunAsNonRoot field being set to true, we need to force the user in the
-							// container to a non-zero numeric user. We do this using the RunAsUser field.
-							// However, if you are looking to provide solution for K8s vendors like OpenShift
-							// be aware that you cannot run under its restricted-v2 SCC if you set this value.
-							RunAsUser:                &[]int64{1001}[0],
-							AllowPrivilegeEscalation: &[]bool{false}[0],
-							Capabilities: &corev1.Capabilities{
-								Add: []corev1.Capability{
-									"NET_BIND_SERVICE",
-								},
-							},
-						},
+						//SecurityContext: &corev1.SecurityContext{
+						//	// WARNING: Ensure that the image used defines an UserID in the Dockerfile
+						//	// otherwise the Pod will not run and will fail with "container has runAsNonRoot and image has non-numeric user"".
+						//	// If you want your workloads admitted in namespaces enforced with the restricted mode in OpenShift/OKD vendors
+						//	// then, you MUST ensure that the Dockerfile defines a User ID OR you MUST leave the "RunAsNonRoot" and
+						//	// "RunAsUser" fields empty.
+						//	RunAsNonRoot: &[]bool{true}[0],
+						//	// The hub image does not use a non-zero numeric user as the default user.
+						//	// Due to RunAsNonRoot field being set to true, we need to force the user in the
+						//	// container to a non-zero numeric user. We do this using the RunAsUser field.
+						//	// However, if you are looking to provide solution for K8s vendors like OpenShift
+						//	// be aware that you cannot run under its restricted-v2 SCC if you set this value.
+						//	RunAsUser:                &[]int64{1001}[0],
+						//	AllowPrivilegeEscalation: &[]bool{false}[0],
+						//	Capabilities: &corev1.Capabilities{
+						//		Add: []corev1.Capability{
+						//			"NET_BIND_SERVICE",
+						//		},
+						//	},
+						//},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 80,
 							Name:          "http",
