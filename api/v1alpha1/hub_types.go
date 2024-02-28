@@ -30,8 +30,6 @@ type HubSpec struct {
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	Replicas int32 `json:"size,omitempty"`
-	// Foo is an example field of Hub. Edit hub_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
 }
 
 // HubStatus defines the observed state of Hub

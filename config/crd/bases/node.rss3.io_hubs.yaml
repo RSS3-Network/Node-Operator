@@ -34,10 +34,6 @@ spec:
           spec:
             description: HubSpec defines the desired state of Hub
             properties:
-              foo:
-                description: Foo is an example field of Hub. Edit hub_types.go to
-                  remove/update
-                type: string
               size:
                 format: int32
                 type: integer

@@ -3,4 +3,4 @@ kind: Kustomization
 
 resources:
   - ../../config/default
-#  - ../../config/samples
+  - ../../config/samples
