@@ -322,8 +322,8 @@ func (r *HubReconciler) deploymentForHub(
 							RunAsUser:                &[]int64{1001}[0],
 							AllowPrivilegeEscalation: &[]bool{false}[0],
 							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{
-									"ALL",
+								Add: []corev1.Capability{
+									"NET_BIND_SERVICE",
 								},
 							},
 						},
