@@ -221,12 +221,12 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			log.Error(err, "Failed to update Deployment",
 				"Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
 
-			// Re-fetch the memcached Custom Resource before update the status
+			// Re-fetch the hub Custom Resource before update the status
 			// so that we have the latest state of the resource on the cluster and we will avoid
 			// raise the issue "the object has been modified, please apply
 			// your changes to the latest version and try again" which would re-trigger the reconciliation
 			if err := r.Get(ctx, req.NamespacedName, hub); err != nil {
-				log.Error(err, "Failed to re-fetch memcached")
+				log.Error(err, "Failed to re-fetch hub")
 				return ctrl.Result{}, err
 			}
 
@@ -236,7 +236,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 				Message: fmt.Sprintf("Failed to update the size for the custom resource (%s): (%s)", hub.Name, err)})
 
 			if err := r.Status().Update(ctx, hub); err != nil {
-				log.Error(err, "Failed to update Memcached status")
+				log.Error(err, "Failed to update Hub status")
 				return ctrl.Result{}, err
 			}
 
@@ -248,6 +248,15 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	// The following implementation will update the status
+	meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeAvailableHub,
+		Status: metav1.ConditionTrue, Reason: "Reconciling",
+		Message: fmt.Sprintf("Deployment for custom resource (%s) with %d replicas created successfully", hub.Name, size)})
+
+	if err := r.Status().Update(ctx, hub); err != nil {
+		log.Error(err, "Failed to update Hub status")
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
