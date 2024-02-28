@@ -29,7 +29,7 @@ type HubSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Replicas int32 `json:"size,omitempty"`
+	Replicas int32 `json:"replicas,omitempty"`
 }
 
 // HubStatus defines the observed state of Hub

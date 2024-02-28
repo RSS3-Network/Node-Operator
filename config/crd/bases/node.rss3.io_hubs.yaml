@@ -34,7 +34,7 @@ spec:
           spec:
             description: HubSpec defines the desired state of Hub
             properties:
-              size:
+              replicas:
                 format: int32
                 type: integer
             type: object
