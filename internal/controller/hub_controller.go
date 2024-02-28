@@ -373,6 +373,13 @@ func imageForHub() (string, error) {
 	return image, nil
 }
 
+//+kubebuilder:rbac:groups=node.rss3.io,resources=hubs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=node.rss3.io,resources=hubs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=node.rss3.io,resources=hubs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *HubReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
