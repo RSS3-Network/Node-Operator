@@ -74,9 +74,9 @@ type DatabaseRef struct {
 
 func (d *DatabaseRef) EnvVars() []corev1.EnvVar {
 	return []corev1.EnvVar{
-		{Name: "DATABASE_DRIVER", Value: d.Driver},
-		{Name: "DATABASE_PARITION", Value: fmt.Sprintf("%t", d.Partition)},
-		{Name: "DATABASE_URI", ValueFrom: d.UriRef},
+		{Name: "NODE_DATABASE_DRIVER", Value: d.Driver},
+		{Name: "NODE_DATABASE_PARITION", Value: fmt.Sprintf("%t", d.Partition)},
+		{Name: "NODE_DATABASE_URI", ValueFrom: d.UriRef},
 	}
 }
 
