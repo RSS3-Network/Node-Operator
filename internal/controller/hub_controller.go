@@ -251,7 +251,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	// The following implementation will update the status
 	meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeAvailableHub,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
-		Message: fmt.Sprintf("Deployment for custom resource (%s) with %d replicas created successfully", hub.Name, size)})
+		Message: fmt.Sprintf("Deployment for custom resource (%s) with %d replicas created successfully", hub.Name, replicas)})
 
 	if err := r.Status().Update(ctx, hub); err != nil {
 		log.Error(err, "Failed to update Hub status")
