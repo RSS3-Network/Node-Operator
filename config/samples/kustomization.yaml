@@ -4,3 +4,5 @@ resources:
 - node_v1alpha1_indexer.yaml
 - node_v1alpha1_broadcaster.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
+
+namespace: default
