@@ -331,6 +331,7 @@ func (r *HubReconciler) deploymentForHub(
 							ContainerPort: 80,
 							Name:          "http",
 						}},
+						Env:  hub.Spec.DatabaseRef.EnvVars(),
 						Args: []string{"--module=hub"},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{

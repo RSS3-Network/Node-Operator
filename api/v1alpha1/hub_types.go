@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,7 +31,8 @@ type HubSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Replicas int32 `json:"replicas,omitempty"`
+	Replicas    int32       `json:"replicas,omitempty"`
+	DatabaseRef DatabaseRef `json:"database"`
 }
 
 // HubStatus defines the observed state of Hub
@@ -61,6 +64,20 @@ type HubList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Hub `json:"items"`
+}
+
+type DatabaseRef struct {
+	Driver    string               `json:"driver"`
+	Partition bool                 `json:"partition"`
+	UriRef    *corev1.EnvVarSource `json:"uri"`
+}
+
+func (d *DatabaseRef) EnvVars() []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{Name: "DATABASE_DRIVER", Value: d.Driver},
+		{Name: "DATABASE_PARITION", Value: fmt.Sprintf("%t", d.Partition)},
+		{Name: "DATABASE_URI", ValueFrom: d.UriRef},
+	}
 }
 
 func init() {

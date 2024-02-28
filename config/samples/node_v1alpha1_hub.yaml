@@ -10,4 +10,12 @@ metadata:
   name: hub-sample
 spec:
   replicas: 1
+  database:
+    driver: cockroachdb
+    partition: true
+    uri:
+      secretKeyRef:
+        name: cockroachdb
+        key: uri
+
   # TODO(user): Add fields here
