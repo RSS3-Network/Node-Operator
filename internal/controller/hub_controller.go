@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
@@ -330,7 +331,35 @@ func (r *HubReconciler) deploymentForHub(
 							ContainerPort: 80,
 							Name:          "http",
 						}},
-						Command: []string{"hub", "-m=64", "-o", "modern", "-v"},
+						Args: []string{"--module=hub"},
+						LivenessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								TCPSocket: &corev1.TCPSocketAction{
+									Port: intstr.IntOrString{
+										Type:   intstr.Int,
+										IntVal: 80,
+									},
+								},
+							},
+							TimeoutSeconds:   3,
+							PeriodSeconds:    10,
+							SuccessThreshold: 1,
+							FailureThreshold: 3,
+						},
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								TCPSocket: &corev1.TCPSocketAction{
+									Port: intstr.IntOrString{
+										Type:   intstr.Int,
+										IntVal: 80,
+									},
+								},
+							},
+							TimeoutSeconds:   3,
+							PeriodSeconds:    10,
+							SuccessThreshold: 1,
+							FailureThreshold: 3,
+						},
 					}},
 				},
 			},
