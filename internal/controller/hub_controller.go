@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
 	"time"
@@ -244,7 +243,7 @@ func (r *HubReconciler) deploymentForHub(
 	replicas := hub.Spec.Size
 
 	// Get the Operand image
-	image, err := imageForHub()
+	image, err := imageForNode()
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +349,7 @@ func (r *HubReconciler) deploymentForHub(
 // More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 func labelsForHub(name string) map[string]string {
 	var imageTag string
-	image, err := imageForHub()
+	image, err := imageForNode()
 	if err == nil {
 		imageTag = strings.Split(image, ":")[1]
 	}
@@ -360,17 +359,6 @@ func labelsForHub(name string) map[string]string {
 		"app.kubernetes.io/part-of":    "node-operator",
 		"app.kubernetes.io/created-by": "controller-manager",
 	}
-}
-
-// imageForHub gets the Operand image which is managed by this controller
-// from the MEMCACHED_IMAGE environment variable defined in the config/manager/manager.yaml
-func imageForHub() (string, error) {
-	var imageEnvVar = "NODE_IMAGE"
-	image, found := os.LookupEnv(imageEnvVar)
-	if !found {
-		return "", fmt.Errorf("Unable to find %s environment variable with the image", imageEnvVar)
-	}
-	return image, nil
 }
 
 //+kubebuilder:rbac:groups=node.rss3.io,resources=hubs,verbs=get;list;watch;create;update;patch;delete

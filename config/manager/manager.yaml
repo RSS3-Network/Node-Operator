@@ -72,6 +72,9 @@ spec:
         - --leader-elect
         image: controller:latest
         name: manager
+        env:
+          - name: NODE_IMAGE
+            value: rss3/node:v0.2.5
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
