@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/json"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -29,7 +30,13 @@ type IndexerSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Indexer. Edit indexer_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+
+	// Network string must be one of string slice var NetworkEnum
+	// +kubebuilder:validation:Enum=mainnet;testnet;rinkeby;goerli;ropsten;localhost
+	Network     string        `json:"network,omitempty"`
+	Worker      string        `json:"worker,omitempty"`
+	Params      IndexerParams `json:"params,omitempty"`
+	DatabaseRef DatabaseRef   `json:"database"`
 }
 
 // IndexerStatus defines the observed state of Indexer
@@ -61,6 +68,16 @@ type IndexerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Indexer `json:"items"`
+}
+
+type IndexerParams map[string]string
+
+func (ip *IndexerParams) String() string {
+	b, err := json.Marshal(ip)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
 }
 
 func init() {

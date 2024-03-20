@@ -39,15 +39,6 @@ import (
 	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 )
 
-const hubFinalizer = "node.rss3.io/finalizer"
-
-const (
-	// typeAvailableHub represents the status of the Deployment reconciliation
-	typeAvailableHub = "Available"
-	// typeDegradedHub represents the status used when the custom resource is deleted and the finalizer operations are must to occur.
-	typeDegradedHub = "Degraded"
-)
-
 // HubReconciler reconciles a Hub object
 type HubReconciler struct {
 	client.Client
@@ -71,12 +62,11 @@ type HubReconciler struct {
 func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
 	hub := &nodev1alpha1.Hub{}
 	err := r.Get(ctx, req.NamespacedName, hub)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("hub resource not fount. Ignoring since object must be deleted")
+			log.Info("hub resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "Failed to get hub")
@@ -87,7 +77,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		meta.SetStatusCondition(
 			&hub.Status.Conditions,
 			metav1.Condition{
-				Type:    typeAvailableHub,
+				Type:    typeAvailable,
 				Status:  metav1.ConditionUnknown,
 				Reason:  "Reconciling",
 				Message: "Starting reconciliation",
@@ -98,15 +88,15 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			return ctrl.Result{}, err
 		}
 
-		if err := r.Get(ctx, req.NamespacedName, hub); err != nil {
+		if err = r.Get(ctx, req.NamespacedName, hub); err != nil {
 			log.Error(err, "Failed to re-fetch hub")
 			return ctrl.Result{}, err
 		}
 	}
 
-	if !controllerutil.ContainsFinalizer(hub, hubFinalizer) {
+	if !controllerutil.ContainsFinalizer(hub, nodeFinalizer) {
 		log.Info("Adding Finalizer for Hub")
-		if ok := controllerutil.AddFinalizer(hub, hubFinalizer); !ok {
+		if ok := controllerutil.AddFinalizer(hub, nodeFinalizer); !ok {
 			log.Error(err, "Failed to add finalizer into the custom resource")
 			return ctrl.Result{Requeue: true}, nil
 		}
@@ -121,11 +111,11 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	// indicated by the deletion timestamp being set.
 	isHubMarkedToBeDeleted := hub.GetDeletionTimestamp() != nil
 	if isHubMarkedToBeDeleted {
-		if controllerutil.ContainsFinalizer(hub, hubFinalizer) {
+		if controllerutil.ContainsFinalizer(hub, nodeFinalizer) {
 			log.Info("Performing Finalizer Operations for Hub before delete CR")
 
 			// Let's add here a status "Downgrade" to define that this resource begin its process to be terminated.
-			meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeDegradedHub,
+			meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionUnknown, Reason: "Finalizing",
 				Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", hub.Name)})
 
@@ -151,7 +141,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 				return ctrl.Result{}, err
 			}
 
-			meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeDegradedHub,
+			meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeDegraded,
 				Status: metav1.ConditionTrue, Reason: "Finalizing",
 				Message: fmt.Sprintf("Finalizer operations for custom resource %s name were successfully accomplished", hub.Name)})
 
@@ -161,7 +151,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			}
 
 			log.Info("Removing Finalizer for Hub after successfully perform the operations")
-			if ok := controllerutil.RemoveFinalizer(hub, hubFinalizer); !ok {
+			if ok := controllerutil.RemoveFinalizer(hub, nodeFinalizer); !ok {
 				log.Error(err, "Failed to remove finalizer for Hub")
 				return ctrl.Result{Requeue: true}, nil
 			}
@@ -184,7 +174,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			log.Error(err, "Failed to define new Deployment resource for Hub")
 
 			// The following implementation will update the status
-			meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeAvailableHub,
+			meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeAvailable,
 				Status: metav1.ConditionFalse, Reason: "Reconciling",
 				Message: fmt.Sprintf("Failed to create Deployment for the custom resource (%s): (%s)", hub.Name, err)})
 
@@ -231,7 +221,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			}
 
 			// The following implementation will update the status
-			meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeAvailableHub,
+			meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeAvailable,
 				Status: metav1.ConditionFalse, Reason: "Resizing",
 				Message: fmt.Sprintf("Failed to update the size for the custom resource (%s): (%s)", hub.Name, err)})
 
@@ -249,7 +239,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 
 	// The following implementation will update the status
-	meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeAvailableHub,
+	meta.SetStatusCondition(&hub.Status.Conditions, metav1.Condition{Type: typeAvailable,
 		Status: metav1.ConditionTrue, Reason: "Reconciling",
 		Message: fmt.Sprintf("Deployment for custom resource (%s) with %d replicas created successfully", hub.Name, replicas)})
 
@@ -483,10 +473,14 @@ func labelsForHub(name string) map[string]string {
 	if err == nil {
 		imageTag = strings.Split(image, ":")[1]
 	}
-	return map[string]string{"app.kubernetes.io/name": "Hub",
-		"app.kubernetes.io/instance":   name,
-		"app.kubernetes.io/version":    imageTag,
+	return map[string]string{
+		"app.kubernetes.io/name":      "node",
+		"app.kubernetes.io/instance":  name,
+		"app.kubernetes.io/version":   imageTag,
+		"app.kubernetes.io/component": "hub",
+
 		"app.kubernetes.io/part-of":    "node-operator",
+		"app.kubernetes.io/managed-by": "node-operator",
 		"app.kubernetes.io/created-by": "controller-manager",
 	}
 }
