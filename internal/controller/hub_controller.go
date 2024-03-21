@@ -56,8 +56,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	log := r.Log.With(zap.String("hub", req.NamespacedName.String()))
 
 	hub := &nodev1alpha1.Hub{}
-	err := r.Get(ctx, req.NamespacedName, hub)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, hub); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("hub resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
@@ -76,21 +75,21 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, nil
 	}
 
-	if err = factory.AddFinalizer(ctx, r.Client, hub); err != nil {
+	if err := factory.AddFinalizer(ctx, r.Client, hub); err != nil {
 		log.Error("Failed to add finalizer", zap.Error(err))
 		return ctrl.Result{}, err
 	}
 
 	return reconcileWithDiff(ctx, r.Client, hub, func() (ctrl.Result, error) {
-		if err = factory.CreateOrUpdateHub(ctx, r.Log, hub, r.Client); err != nil {
+		if err := factory.CreateOrUpdateHub(ctx, r.Log, hub, r.Client); err != nil {
 			return ctrl.Result{}, err
 		}
 
-		if _, err = factory.CreateOrUpdateHubService(ctx, r.Log, hub, r.Client); err != nil {
+		if _, err := factory.CreateOrUpdateHubService(ctx, r.Log, hub, r.Client); err != nil {
 			return ctrl.Result{}, err
 		}
 
-		if err = r.Status().Update(ctx, hub); err != nil {
+		if err := r.Status().Update(ctx, hub); err != nil {
 			return ctrl.Result{}, fmt.Errorf("cannot update status for hub: %s: %w", hub.Name, err)
 		}
 		return ctrl.Result{}, nil

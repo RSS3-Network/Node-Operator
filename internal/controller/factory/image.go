@@ -6,6 +6,12 @@ import (
 	"github.com/google/go-github/v60/github"
 	"go.uber.org/zap"
 	"os"
+	"sync"
+)
+
+var (
+	tagCache     string
+	tagCacheLock sync.RWMutex
 )
 
 // imageForHub gets the Operand image which is managed by this controller
@@ -16,13 +22,26 @@ func imageForNode() (string, error) {
 	if found {
 		return image, nil
 	}
+
+	tagCacheLock.RLock()
+	defer tagCacheLock.RUnlock()
+	if tagCache != "" {
+		return fmt.Sprintf("rss3/node:%s", tagCache), nil
+	}
+
 	zap.L().Debug("Unable to find %s environment variable with the image",
 		zap.String("envVar", imageEnvVar))
 	// Get the latest tag from the GitHub repository
 	tag, err := getNewestTag()
+
+	tagCacheLock.Lock()
+	tagCache = tag
+	tagCacheLock.Unlock()
+
 	if err != nil {
 		return "", err
 	}
+
 	return fmt.Sprintf("rss3/node:%s", tag), nil
 }
 

@@ -59,7 +59,7 @@ func OnHubDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.H
 	}
 
 	//if err = RemoveOrphanedResource(ctx, rc,)
-	return RemoveFinalizer(ctx, rc, instance)
+	return removeFinalizeObjByName(ctx, rc, instance, instance.Name, instance.Namespace)
 }
 
 func OnIndexerDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.Indexer) (err error) {

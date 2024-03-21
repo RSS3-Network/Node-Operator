@@ -205,6 +205,7 @@ func serviceForHub(
 			Annotations: hub.Annotations,
 		},
 		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
 				{Name: "http", Protocol: corev1.ProtocolTCP, Port: 80, TargetPort: intstr.FromInt32(80)},
 			},
