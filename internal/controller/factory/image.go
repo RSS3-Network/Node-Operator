@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/go-github/v60/github"
-	"google.golang.org/appengine/log"
+	"go.uber.org/zap"
 	"os"
 )
 
@@ -16,23 +16,27 @@ func imageForNode() (string, error) {
 	if found {
 		return image, nil
 	}
-	ctx := context.Background()
-	log.Debugf(ctx, "Unable to find %s environment variable with the image", imageEnvVar)
+	zap.L().Debug("Unable to find %s environment variable with the image",
+		zap.String("envVar", imageEnvVar))
 	// Get the latest tag from the GitHub repository
-	tag, err := getNewestTag(ctx)
+	tag, err := getNewestTag()
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("rss3/node:%s", tag), nil
 }
 
-func getNewestTag(ctx context.Context) (string, error) {
+func getNewestTag() (string, error) {
 	owner := "rss3-network"
 	repo := "node"
 	client := github.NewClient(nil)
-	release, _, err := client.Repositories.GetLatestRelease(ctx, owner, repo)
+	ctx := context.Background()
+	tags, _, err := client.Repositories.ListTags(ctx, owner, repo, nil)
 	if err != nil {
 		return "", err
 	}
-	return *release.TagName, nil
+	if len(tags) == 0 {
+		return "", fmt.Errorf("no tags found for %s/%s", owner, repo)
+	}
+	return *tags[0].Name, nil
 }

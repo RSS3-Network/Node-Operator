@@ -13,23 +13,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateOrUpdateHubService(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Hub, rc client.Client) error {
+func CreateOrUpdateHubService(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Hub, rc client.Client) (*corev1.Service, error) {
+	cr = cr.DeepCopy()
+
 	svc, err := serviceForHub(cr, rc)
 	if err != nil {
 		log.Error("Failed to define new Service resource for Hub", zap.Error(err))
-		return err
+		return nil, err
 	}
 
-	if err = k8s.HandleSvcUpdate(ctx, rc, svc, nodev1alpha1.WaitReadyTimeout); err != nil {
-		log.Error("Failed to handle service",
-			zap.Error(err),
-			zap.String("namespace", svc.Namespace),
-			zap.String("name", svc.Name),
-		)
-		return err
-	}
-
-	return nil
+	return reconcileService(ctx, rc, svc)
 }
 
 func CreateOrUpdateHub(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Hub, rc client.Client) error {
