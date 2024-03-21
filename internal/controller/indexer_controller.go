@@ -69,8 +69,7 @@ func (r *IndexerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	isIndexerMarkedToBeDeleted := indexer.GetDeletionTimestamp() != nil
-	if isIndexerMarkedToBeDeleted {
+	if indexer.GetDeletionTimestamp().IsZero() {
 		if err := factory.OnIndexerDelete(ctx, r.Client, indexer); err != nil {
 			log.Error("failed to finalize indexer", zap.Error(err))
 			return ctrl.Result{}, err

@@ -73,8 +73,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 	// Check if the Hub instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.
-	isHubMarkedToBeDeleted := hub.GetDeletionTimestamp() != nil
-	if isHubMarkedToBeDeleted {
+	if hub.GetDeletionTimestamp().IsZero() {
 		if err := factory.OnHubDelete(ctx, r.Client, hub); err != nil {
 			log.Error("Failed to finalize hub", zap.Error(err))
 			return ctrl.Result{}, err

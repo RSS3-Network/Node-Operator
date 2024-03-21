@@ -3,6 +3,10 @@ package factory
 import (
 	"context"
 	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
+	"github.com/samber/lo"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -16,56 +20,42 @@ func AddFinalizer(ctx context.Context, rc client.Client, instance client.Object)
 	return nil
 }
 
-func OnHubDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.Hub) (err error) {
-	if controllerutil.ContainsFinalizer(instance, nodev1alpha1.NodeFinalizer) {
-		// Let's add here a status "Downgrade" to define that this resource begin its process to be terminated.
-		if err = rc.Status().Update(ctx, instance); err != nil {
-			return
-		}
-
-		if err = rc.Get(ctx, types.NamespacedName{
-			Namespace: instance.Namespace,
-			Name:      instance.Name,
-		}, instance); err != nil {
-			return
-		}
-
-		if err = rc.Status().Update(ctx, instance); err != nil {
-			return
-		}
-
-		if ok := controllerutil.RemoveFinalizer(instance, nodev1alpha1.NodeFinalizer); !ok {
+func removeFinalizeObjByName(ctx context.Context, rclient client.Client, obj client.Object, name, ns string) error {
+	if err := rclient.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, obj); err != nil {
+		if errors.IsNotFound(err) {
 			return nil
 		}
+		return err
+	}
+	// fast path
+	if !controllerutil.ContainsFinalizer(obj, nodev1alpha1.NodeFinalizer) {
+		return nil
+	}
+	obj.SetFinalizers(lo.Filter(obj.GetFinalizers(), func(s string, index int) bool {
+		return s != nodev1alpha1.NodeFinalizer
+	}))
+	return rclient.Update(ctx, obj)
+}
 
-		return rc.Update(ctx, instance)
+func OnHubDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.Hub) (err error) {
+	if err = removeFinalizeObjByName(ctx, rc, &appsv1.Deployment{}, instance.Name, instance.Namespace); err != nil {
+		return err
+	}
+
+	if err = removeFinalizeObjByName(ctx, rc, &corev1.Service{}, instance.Name, instance.Namespace); err != nil {
+		return err
 	}
 	return nil
 }
 
 func OnIndexerDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.Indexer) (err error) {
-	if controllerutil.ContainsFinalizer(instance, nodev1alpha1.NodeFinalizer) {
-		// Let's add here a status "Downgrade" to define that this resource begin its process to be terminated.
-		if err = rc.Status().Update(ctx, instance); err != nil {
-			return
-		}
-
-		if err = rc.Get(ctx, types.NamespacedName{
-			Namespace: instance.Namespace,
-			Name:      instance.Name,
-		}, instance); err != nil {
-			return
-		}
-
-		if err = rc.Status().Update(ctx, instance); err != nil {
-			return
-		}
-
-		if ok := controllerutil.RemoveFinalizer(instance, nodev1alpha1.NodeFinalizer); !ok {
-			return nil
-		}
-
-		return rc.Update(ctx, instance)
+	if err = removeFinalizeObjByName(ctx, rc, &appsv1.StatefulSet{}, instance.Name, instance.Namespace); err != nil {
+		return err
 	}
+
+	if err = removeFinalizeObjByName(ctx, rc, &corev1.ConfigMap{}, instance.Name, instance.Namespace); err != nil {
+		return err
+	}
+
 	return nil
 }
