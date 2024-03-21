@@ -49,13 +49,6 @@ func removeFinalizeObjByName(ctx context.Context, rclient client.Client, obj cli
 	return rclient.Update(ctx, obj)
 }
 
-func RemoveOrphanedResource(ctx context.Context, rclient client.Client, obj client.Object, name, ns string) error {
-	if err := RemoveFinalizer(ctx, rclient, obj); err != nil {
-		return err
-	}
-	return nil
-}
-
 func OnHubDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.Hub) (err error) {
 	if err = removeFinalizeObjByName(ctx, rc, &appsv1.Deployment{}, instance.Name, instance.Namespace); err != nil {
 		return err
@@ -66,7 +59,7 @@ func OnHubDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.H
 	}
 
 	//if err = RemoveOrphanedResource(ctx, rc,)
-	return nil
+	return RemoveFinalizer(ctx, rc, instance)
 }
 
 func OnIndexerDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.Indexer) (err error) {
@@ -78,5 +71,5 @@ func OnIndexerDelete(ctx context.Context, rc client.Client, instance *nodev1alph
 		return err
 	}
 
-	return nil
+	return RemoveFinalizer(ctx, rc, instance)
 }
