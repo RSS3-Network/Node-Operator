@@ -129,7 +129,7 @@ func (cr *Indexer) SetUpdateStatusTo(ctx context.Context, r client.Client, statu
 	}
 
 	if err := r.Status().Update(ctx, cr); err != nil {
-		return fmt.Errorf("cannot update status for hub: %s: %w", cr.Name, err)
+		return fmt.Errorf("cannot update status for indexer: %s: %w", cr.Name, err)
 	}
 	return nil
 }

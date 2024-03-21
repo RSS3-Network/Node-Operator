@@ -130,10 +130,11 @@ func (cr *Hub) SetUpdateStatusTo(ctx context.Context, r client.Client, status Up
 	default:
 		cr.Status.Conditions = []metav1.Condition{
 			{
-				Type:    "Ready",
-				Status:  metav1.ConditionTrue,
-				Reason:  "Ready",
-				Message: "Hub is ready",
+				Type:               "Ready",
+				Status:             metav1.ConditionTrue,
+				Reason:             "Ready",
+				Message:            "Hub is ready",
+				LastTransitionTime: metav1.Now(),
 			},
 		}
 	}
