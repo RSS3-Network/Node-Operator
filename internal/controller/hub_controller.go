@@ -82,16 +82,15 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 
 	return reconcileWithDiff(ctx, r.Client, hub, func() (ctrl.Result, error) {
-		if err := factory.CreateOrUpdateHub(ctx, r.Log, hub, r.Client); err != nil {
+		if err = factory.CreateOrUpdateHub(ctx, r.Log, hub, r.Client); err != nil {
 			return ctrl.Result{}, err
 		}
 
-		_, err = factory.CreateOrUpdateHubService(ctx, r.Log, hub, r.Client)
-		if err != nil {
+		if err = factory.CreateOrUpdateHubService(ctx, r.Log, hub, r.Client); err != nil {
 			return ctrl.Result{}, err
 		}
 
-		if err := r.Status().Update(ctx, hub); err != nil {
+		if err = r.Status().Update(ctx, hub); err != nil {
 			return ctrl.Result{}, fmt.Errorf("cannot update status for hub: %s: %w", hub.Name, err)
 		}
 		return ctrl.Result{}, nil

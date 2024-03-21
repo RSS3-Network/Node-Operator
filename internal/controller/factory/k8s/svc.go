@@ -10,25 +10,25 @@ import (
 	"time"
 )
 
-func HandleSvcUpdate(ctx context.Context, rc client.Client, svc *corev1.Service, waitDeadline time.Duration) error {
+func HandleSvcUpdate(ctx context.Context, rc client.Client, newSvc *corev1.Service, waitDeadline time.Duration) error {
 	// Check if the service already exists, if not create a new one
 	var currentSvc corev1.Service
-	err := rc.Get(ctx, client.ObjectKey{Name: svc.Name, Namespace: svc.Namespace}, &currentSvc)
+	err := rc.Get(ctx, client.ObjectKey{Name: newSvc.Name, Namespace: newSvc.Namespace}, &currentSvc)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			if err := rc.Create(ctx, svc); err != nil {
-				return fmt.Errorf("cannot create new service for app: %s, err: %w", svc.Name, err)
+			if err := rc.Create(ctx, newSvc); err != nil {
+				return fmt.Errorf("cannot create new service for app: %s, err: %w", newSvc.Name, err)
 			}
-			return waitServiceReady(ctx, rc, svc, waitDeadline)
+			return waitServiceReady(ctx, rc, newSvc, waitDeadline)
 		}
-		return fmt.Errorf("cannot get service for app: %s err: %w", svc.Name, err)
+		return fmt.Errorf("cannot get service for app: %s err: %w", newSvc.Name, err)
 	}
 
-	if err := rc.Update(ctx, svc); err != nil {
-		return fmt.Errorf("cannot update service for app: %s, err: %w", svc.Name, err)
+	if err := rc.Update(ctx, newSvc); err != nil {
+		return fmt.Errorf("cannot update service for app: %s, err: %w", newSvc.Name, err)
 	}
 
-	return waitServiceReady(ctx, rc, svc, waitDeadline)
+	return waitServiceReady(ctx, rc, newSvc, waitDeadline)
 }
 
 func waitServiceReady(ctx context.Context, rc client.Client, svc *corev1.Service, waitDeadline time.Duration) error {
