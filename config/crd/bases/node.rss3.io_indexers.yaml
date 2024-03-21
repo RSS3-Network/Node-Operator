@@ -136,7 +136,8 @@ spec:
                 type: string
               params:
                 additionalProperties:
-                  type: string
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 type: object
               worker:
                 type: string
@@ -216,6 +217,8 @@ spec:
                   - type
                   type: object
                 type: array
+              status:
+                type: string
             type: object
         type: object
     served: true

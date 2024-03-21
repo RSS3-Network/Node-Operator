@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indexer-config-template
+data:
+  config.yaml: |
+    environment: production
+    discovery:
+      maintainer:
+        evm_address:
+        signature:
+      server:
+        endpoint:
+        global_indexer_endpoint:
+    database:
+      driver: cockroachdb
+      partition: true
+      uri: postgres://root@localhost:26257/defaultdb
+    stream:
+      enable: false
+      driver: kafka
+      topic: rss3.node.feeds
+      uri: localhost:9092
+    observability:
+      opentelemetry:
+        metrics:
+          enable: true
+          endpoint: 0.0.0.0:9090
+        traces:
+          enable: true
+          insecure: true
+          endpoint: localhost:4318
+    
+    component:
+      rss:
+        - network: rss
+          endpoint: https://rsshub.app/
+          parameters:
+            authentication:
+              username:
+              password:
+              access_key:
+              access_code:
+    
+      decentralized:
+        # ethereum
+        - network: $
+          worker:
+          endpoint:
+          parameters:
+            block_number_start:
+            block_number_target:

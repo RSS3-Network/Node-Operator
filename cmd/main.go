@@ -31,6 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	uzap "go.uber.org/zap"
+
 	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 	"github.com/rss3-network/node-operator/internal/controller"
 	//+kubebuilder:scaffold:imports
@@ -88,10 +90,12 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+	uzap.ReplaceGlobals(uzap.Must(uzap.NewDevelopment()))
 
 	if err = (&controller.HubReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
+		Log:      uzap.L(),
 		Recorder: mgr.GetEventRecorderFor("hub-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Hub")
@@ -100,6 +104,7 @@ func main() {
 	if err = (&controller.IndexerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		Log:    uzap.L(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Indexer")
 		os.Exit(1)

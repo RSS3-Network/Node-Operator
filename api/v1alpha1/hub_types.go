@@ -17,9 +17,15 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -31,7 +37,7 @@ type HubSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Replicas    int32       `json:"replicas,omitempty"`
+	Replicas    *int32      `json:"replicas,omitempty"`
 	DatabaseRef DatabaseRef `json:"database"`
 }
 
@@ -40,6 +46,7 @@ type HubStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	Status UpdateStatus `json:"status,omitempty"`
 	// Conditions store the status conditions of the Hub instances
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
@@ -78,6 +85,80 @@ func (d *DatabaseRef) EnvVars() []corev1.EnvVar {
 		{Name: "NODE_DATABASE_PARITION", Value: fmt.Sprintf("%t", d.Partition)},
 		{Name: "NODE_DATABASE_URI", ValueFrom: d.UriRef},
 	}
+}
+
+func (cr *Hub) SpecDiff() bool {
+	var preSpec HubSpec
+	lastAppliedConfig := cr.GetAnnotations()[lastAppliedConfigAnnotation]
+	if len(lastAppliedConfig) == 0 {
+		return true
+	}
+	if err := json.Unmarshal([]byte(lastAppliedConfig), &preSpec); err != nil {
+		return true
+	}
+	specData, _ := json.Marshal(cr.Spec)
+	return !bytes.Equal(specData, []byte(lastAppliedConfig))
+}
+
+func (cr *Hub) PatchApplyAnnotations() (client.Patch, error) {
+	data, err := json.Marshal(cr.Spec)
+	if err != nil {
+		return nil, fmt.Errorf("cannot marshal spec: %w", err)
+	}
+	patch := fmt.Sprintf(`{"metadata":{"annotations":{"%s":"%s"}}}`, lastAppliedConfigAnnotation, string(data))
+	return client.RawPatch(types.MergePatchType, []byte(patch)), nil
+}
+
+func (cr *Hub) SetUpdateStatusTo(ctx context.Context, r client.Client, status UpdateStatus, maybeReason error) error {
+	cr.Status.Status = status
+
+	switch status {
+	case UpdateStatusFailed:
+	case UpdateStatusDegraded:
+	case UpdateStatusExpanding:
+		if maybeReason != nil {
+			cr.Status.Conditions = []metav1.Condition{
+				{
+					Type:               "Expanding",
+					Status:             metav1.ConditionFalse,
+					Reason:             "Expanding",
+					Message:            maybeReason.Error(),
+					LastTransitionTime: metav1.Now(),
+				},
+			}
+		}
+	default:
+		cr.Status.Conditions = []metav1.Condition{
+			{
+				Type:    "Ready",
+				Status:  metav1.ConditionTrue,
+				Reason:  "Ready",
+				Message: "Hub is ready",
+			},
+		}
+	}
+
+	if err := r.Status().Update(ctx, cr); err != nil {
+		return fmt.Errorf("cannot update status for hub: %s: %w", cr.Name, err)
+	}
+	return nil
+}
+
+func (cr *Hub) SelectorLabels() map[string]string {
+	return map[string]string{
+		"app.kubernetes.io/name":      "node",
+		"app.kubernetes.io/instance":  cr.Name,
+		"app.kubernetes.io/component": "hub",
+
+		"app.kubernetes.io/part-of":    "node-operator",
+		"app.kubernetes.io/managed-by": "node-operator",
+		"app.kubernetes.io/created-by": "controller-manager",
+	}
+}
+
+func (cr *Hub) PodLabels() map[string]string {
+	selectorLabels := cr.SelectorLabels()
+	return labels.Merge(selectorLabels, nil)
 }
 
 func init() {
