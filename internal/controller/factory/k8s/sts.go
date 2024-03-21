@@ -6,6 +6,7 @@ import (
 	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -13,7 +14,7 @@ import (
 
 func HandleSTSUpdate(ctx context.Context, rc client.Client, newSts *appsv1.StatefulSet, waitDeadline time.Duration) error {
 	var currentSts appsv1.StatefulSet
-	err := rc.Get(ctx, client.ObjectKey{Name: newSts.Name, Namespace: newSts.Namespace}, &currentSts)
+	err := rc.Get(ctx, types.NamespacedName{Name: newSts.Name, Namespace: newSts.Namespace}, &currentSts)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			if err := rc.Create(ctx, newSts); err != nil {
@@ -38,7 +39,7 @@ func HandleSTSUpdate(ctx context.Context, rc client.Client, newSts *appsv1.State
 
 func waitStatefulSetReady(ctx context.Context, rc client.Client, sts *appsv1.StatefulSet, waitDeadline time.Duration) error {
 	time.Sleep(2 * time.Second)
-	return wait.PollUntilContextTimeout(ctx, time.Second, waitDeadline, true, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, time.Second*5, waitDeadline, true, func(ctx context.Context) (bool, error) {
 		var actual appsv1.StatefulSet
 		if err := rc.Get(ctx, client.ObjectKey{Name: sts.Name, Namespace: sts.Namespace}, &actual); err != nil {
 			return false, fmt.Errorf("cannot fetch actual statefulset: %w", err)
