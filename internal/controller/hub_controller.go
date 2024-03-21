@@ -86,7 +86,7 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 			return ctrl.Result{}, err
 		}
 
-		_, err = factory.CreateOrUpdateHubService(ctx, hub, r.Client)
+		_, err = factory.CreateOrUpdateHubService(ctx, r.Log, hub, r.Client)
 		if err != nil {
 			return ctrl.Result{}, err
 		}

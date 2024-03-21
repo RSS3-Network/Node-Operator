@@ -7,24 +7,24 @@ import (
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateOrUpdateHubService(ctx context.Context, cr *nodev1alpha1.Hub, rc client.Client) (*corev1.Service, error) {
+func CreateOrUpdateHubService(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Hub, rc client.Client) (*corev1.Service, error) {
 	svc, err := serviceForHub(cr, rc)
-	err = rc.Get(ctx, types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, svc)
-	if err != nil && apierrors.IsNotFound(err) {
-		// Define a new service
-		if err = rc.Create(ctx, svc); err != nil {
-			return nil, err
-		}
-		return svc, nil
-	} else if err != nil {
+	if err != nil {
+		log.Error("Failed to define new Service resource for Hub", zap.Error(err))
+	}
+
+	if err = k8s.HandleSvcUpdate(ctx, rc, svc, 0); err != nil {
+		log.Error("Failed to handle service",
+			zap.Error(err),
+			zap.String("namespace", svc.Namespace),
+			zap.String("name", svc.Name),
+		)
 		return nil, err
 	}
 
@@ -33,32 +33,23 @@ func CreateOrUpdateHubService(ctx context.Context, cr *nodev1alpha1.Hub, rc clie
 
 func CreateOrUpdateHub(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Hub, rc client.Client) error {
 	// Check if the deployment already exists, if not create a new one
-	found := &appsv1.Deployment{}
-	err := rc.Get(ctx, types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, found)
-	if err != nil && apierrors.IsNotFound(err) {
-		// Define a new deployment
-		dep, err := deploymentForHub(cr, rc)
-		if err != nil {
-			log.Error("Failed to define new Deployment resource for Hub", zap.Error(err))
-			return err
-		}
 
-		log.Info("Creating a new Deployment",
-			zap.String("namespace", dep.Namespace),
-			zap.String("name", dep.Name))
-		if err = k8s.HandleDeployUpdate(ctx, rc, dep, 0); err != nil {
-			log.Error("Failed to create new Deployment",
-				zap.Error(err),
-				zap.String("namespace", dep.Namespace),
-				zap.String("name", dep.Name),
-			)
-			return err
-		}
-	} else if err != nil {
-		log.Error("Failed to get Deployment", zap.Error(err))
-		// Let's return the error for the reconciliation be re-trigged again
+	// Define a new deployment
+	dep, err := deploymentForHub(cr, rc)
+	if err != nil {
+		log.Error("Failed to define new Deployment resource for Hub", zap.Error(err))
 		return err
 	}
+
+	if err = k8s.HandleDeployUpdate(ctx, rc, dep, 0); err != nil {
+		log.Error("Failed to handle deployment",
+			zap.Error(err),
+			zap.String("namespace", dep.Namespace),
+			zap.String("name", dep.Name),
+		)
+		return err
+	}
+
 	return nil
 }
 
@@ -221,7 +212,7 @@ func serviceForHub(
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
-				{Name: "http", Protocol: corev1.ProtocolTCP, Port: 80, TargetPort: intstr.FromInt(80)},
+				{Name: "http", Protocol: corev1.ProtocolTCP, Port: 80, TargetPort: intstr.FromInt32(80)},
 			},
 			Selector: hub.SelectorLabels(),
 		},
