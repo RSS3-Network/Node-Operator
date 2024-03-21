@@ -105,7 +105,7 @@ func (cr *Hub) PatchApplyAnnotations() (client.Patch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot marshal spec: %w", err)
 	}
-	patch := fmt.Sprintf(`{"metadata":{"annotations":{"%s":"%s"}}}`, lastAppliedConfigAnnotation, string(data))
+	patch := fmt.Sprintf(`{"metadata":{"annotations":{"%s": %q}}}`, lastAppliedConfigAnnotation, string(data))
 	return client.RawPatch(types.MergePatchType, []byte(patch)), nil
 }
 
