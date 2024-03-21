@@ -5,6 +5,7 @@ on:
       - main
     paths-ignore:
       - deploy/**
+      - config/**
 jobs:
   build:
     uses: NaturalSelectionLabs/Daedalus/.github/workflows/docker-tpl.yaml@main
