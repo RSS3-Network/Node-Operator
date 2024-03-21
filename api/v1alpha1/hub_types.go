@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -46,7 +47,6 @@ type HubStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Status UpdateStatus `json:"status,omitempty"`
 	// Conditions store the status conditions of the Hub instances
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
@@ -109,35 +109,29 @@ func (cr *Hub) PatchApplyAnnotations() (client.Patch, error) {
 	return client.RawPatch(types.MergePatchType, []byte(patch)), nil
 }
 
-func (cr *Hub) SetUpdateStatusTo(ctx context.Context, r client.Client, status UpdateStatus, maybeReason error) error {
-	cr.Status.Status = status
+func (cr *Hub) SetStatusCondition(ctx context.Context, r client.Client, status UpdateStatus, reason error) error {
+	var cond metav1.Condition
 
 	switch status {
 	case UpdateStatusFailed:
 	case UpdateStatusDegraded:
 	case UpdateStatusExpanding:
-		if maybeReason != nil {
-			cr.Status.Conditions = []metav1.Condition{
-				{
-					Type:               "Expanding",
-					Status:             metav1.ConditionFalse,
-					Reason:             "Expanding",
-					Message:            maybeReason.Error(),
-					LastTransitionTime: metav1.Now(),
-				},
-			}
+		cond = metav1.Condition{
+			Type:    string(status),
+			Status:  metav1.ConditionFalse,
+			Reason:  reason.Error(),
+			Message: fmt.Sprintf("Hub is in %s: %s", status, reason.Error()),
 		}
 	default:
-		cr.Status.Conditions = []metav1.Condition{
-			{
-				Type:               "Ready",
-				Status:             metav1.ConditionTrue,
-				Reason:             "Ready",
-				Message:            "Hub is ready",
-				LastTransitionTime: metav1.Now(),
-			},
+		cond = metav1.Condition{
+			Type:    "Ready",
+			Status:  metav1.ConditionTrue,
+			Reason:  "Ready",
+			Message: "Hub is ready",
 		}
 	}
+
+	meta.SetStatusCondition(&cr.Status.Conditions, cond)
 
 	if err := r.Status().Update(ctx, cr); err != nil {
 		return fmt.Errorf("cannot update status for hub: %s: %w", cr.Name, err)
