@@ -334,6 +334,13 @@ func labelsForIndexer(name string) map[string]string {
 	}
 }
 
+//+kubebuilder:rbac:groups=node.rss3.io,resources=indexers,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=node.rss3.io,resources=indexers/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=node.rss3.io,resources=indexers/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
+//+kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *IndexerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
