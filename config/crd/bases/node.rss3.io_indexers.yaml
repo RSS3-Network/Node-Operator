@@ -130,12 +130,14 @@ spec:
                 - partition
                 - uri
                 type: object
-              network:
-                enum:
-                - admin
-                - reseller
-                - operator
+              endpoint:
                 type: string
+              network:
+                type: string
+              params:
+                additionalProperties:
+                  type: string
+                type: object
               worker:
                 type: string
             required:

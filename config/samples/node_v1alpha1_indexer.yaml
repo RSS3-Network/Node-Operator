@@ -9,4 +9,14 @@ metadata:
     app.kubernetes.io/created-by: node-operator
   name: indexer-sample
 spec:
+  network: crossbell
+  worker: crossbell
+
   # TODO(user): Add fields here
+  database:
+    driver: cockroachdb
+    partition: true
+    uri:
+      secretKeyRef:
+        name: cockroachdb
+        key: uri

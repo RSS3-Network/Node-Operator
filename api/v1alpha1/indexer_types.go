@@ -29,12 +29,9 @@ type IndexerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Indexer. Edit indexer_types.go to remove/update
-
-	// Network string must be one of string slice var NetworkEnum
-	// +kubebuilder:validation:Enum=mainnet;testnet;rinkeby;goerli;ropsten;localhost
 	Network     string        `json:"network,omitempty"`
 	Worker      string        `json:"worker,omitempty"`
+	Endpoint    string        `json:"endpoint,omitempty"`
 	Params      IndexerParams `json:"params,omitempty"`
 	DatabaseRef DatabaseRef   `json:"database"`
 }

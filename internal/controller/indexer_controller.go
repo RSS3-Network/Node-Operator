@@ -276,6 +276,9 @@ func (r *IndexerReconciler) statefulSetForIndexer(indexer *nodev1alpha1.Indexer)
 							Name:  "NODE_INDEXER_WORKER",
 							Value: indexer.Spec.Worker,
 						}, {
+							Name:  "NODE_INDEXER_ENDPOINT",
+							Value: indexer.Spec.Endpoint,
+						}, {
 							Name:  "NODE_INDEXER_PARAMS",
 							Value: indexer.Spec.Params.String(),
 						}},
