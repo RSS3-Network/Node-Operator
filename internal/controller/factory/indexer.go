@@ -30,7 +30,7 @@ func CreateOrUpdateIndexer(ctx context.Context, log *zap.Logger, cr *nodev1alpha
 		return err
 	}
 
-	if err = k8s.HandleSTSUpdate(ctx, rc, sts, 0); err != nil {
+	if err = k8s.HandleSTSUpdate(ctx, rc, sts, nodev1alpha1.WaitReadyTimeout); err != nil {
 		log.Error("Failed to handle StatefulSet",
 			zap.Error(err),
 			zap.String("namespace", sts.Namespace),
@@ -50,7 +50,7 @@ func CreateOrUpdateConfig(ctx context.Context, log *zap.Logger, cr *nodev1alpha1
 		return fmt.Errorf("cannot define new ConfigMap resource for Indexer: %w", err)
 	}
 
-	if err = k8s.HandleConfigmapUpdate(ctx, rc, cm, 0); err != nil {
+	if err = k8s.HandleConfigmapUpdate(ctx, rc, cm, nodev1alpha1.WaitReadyTimeout); err != nil {
 		log.Error("Failed to handle ConfigMap",
 			zap.Error(err),
 			zap.String("namespace", cm.Namespace),

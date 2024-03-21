@@ -20,7 +20,7 @@ func CreateOrUpdateHubService(ctx context.Context, log *zap.Logger, cr *nodev1al
 		return err
 	}
 
-	if err = k8s.HandleSvcUpdate(ctx, rc, svc, 0); err != nil {
+	if err = k8s.HandleSvcUpdate(ctx, rc, svc, nodev1alpha1.WaitReadyTimeout); err != nil {
 		log.Error("Failed to handle service",
 			zap.Error(err),
 			zap.String("namespace", svc.Namespace),
@@ -42,7 +42,7 @@ func CreateOrUpdateHub(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Hu
 		return err
 	}
 
-	if err = k8s.HandleDeployUpdate(ctx, rc, dep, 0); err != nil {
+	if err = k8s.HandleDeployUpdate(ctx, rc, dep, nodev1alpha1.WaitReadyTimeout); err != nil {
 		log.Error("Failed to handle deployment",
 			zap.Error(err),
 			zap.String("namespace", dep.Namespace),
