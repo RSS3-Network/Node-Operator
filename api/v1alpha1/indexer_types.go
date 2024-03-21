@@ -123,7 +123,7 @@ func (cr *Indexer) SetUpdateStatusTo(ctx context.Context, r client.Client, statu
 				Type:               "Ready",
 				Status:             metav1.ConditionTrue,
 				Reason:             "Ready",
-				Message:            "Hub is ready",
+				Message:            "Indexer is ready",
 				LastTransitionTime: metav1.Now(),
 			},
 		}

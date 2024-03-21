@@ -66,18 +66,19 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, err
 	}
 
-	if err = factory.AddFinalizer(ctx, r.Client, hub); err != nil {
-		log.Error("Failed to add finalizer", zap.Error(err))
-		return ctrl.Result{}, err
-	}
-
 	// Check if the Hub instance is marked to be deleted, which is
 	// indicated by the deletion timestamp being set.
-	if hub.GetDeletionTimestamp().IsZero() {
+	if !hub.GetDeletionTimestamp().IsZero() {
 		if err := factory.OnHubDelete(ctx, r.Client, hub); err != nil {
 			log.Error("Failed to finalize hub", zap.Error(err))
 			return ctrl.Result{}, err
 		}
+		return ctrl.Result{}, nil
+	}
+
+	if err = factory.AddFinalizer(ctx, r.Client, hub); err != nil {
+		log.Error("Failed to add finalizer", zap.Error(err))
+		return ctrl.Result{}, err
 	}
 
 	return reconcileWithDiff(ctx, r.Client, hub, func() (ctrl.Result, error) {

@@ -64,16 +64,17 @@ func (r *IndexerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	if err = factory.AddFinalizer(ctx, r.Client, indexer); err != nil {
-		log.Error("failed to add finalizer", zap.Error(err))
-		return ctrl.Result{}, err
-	}
-
-	if indexer.GetDeletionTimestamp().IsZero() {
+	if !indexer.GetDeletionTimestamp().IsZero() {
 		if err := factory.OnIndexerDelete(ctx, r.Client, indexer); err != nil {
 			log.Error("failed to finalize indexer", zap.Error(err))
 			return ctrl.Result{}, err
 		}
+		return ctrl.Result{}, nil
+	}
+
+	if err = factory.AddFinalizer(ctx, r.Client, indexer); err != nil {
+		log.Error("failed to add finalizer", zap.Error(err))
+		return ctrl.Result{}, err
 	}
 
 	return reconcileWithDiff(ctx, r.Client, indexer, func() (ctrl.Result, error) {
