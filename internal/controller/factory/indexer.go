@@ -6,7 +6,6 @@ import (
 	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 	"github.com/rss3-network/node-operator/internal/controller/factory/k8s"
 	"github.com/rss3-network/protocol-go/schema/filter"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -14,27 +13,28 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/rss3-network/node/config"
 )
 
-func CreateOrUpdateIndexer(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Indexer, rc client.Client) error {
-	if err := CreateOrUpdateConfig(ctx, log, cr, rc); err != nil {
+func CreateOrUpdateIndexer(ctx context.Context, cr *nodev1alpha1.Indexer, rc client.Client) error {
+	logger := log.FromContext(ctx)
+	if err := CreateOrUpdateConfig(ctx, cr, rc); err != nil {
 		return fmt.Errorf("cannot update relabeling asset for vmagent: %w", err)
 	}
 
 	// Define a new statefulSet
 	sts, err := statefulSetForIndexer(cr, rc)
 	if err != nil {
-		log.Error("Failed to define statefulSet resource for Indexer", zap.Error(err))
+		logger.Error(err, "Failed to define statefulSet resource for Indexer")
 		return err
 	}
 
 	if err = k8s.HandleSTSUpdate(ctx, rc, sts, nodev1alpha1.WaitReadyTimeout); err != nil {
-		log.Error("Failed to handle StatefulSet",
-			zap.Error(err),
-			zap.String("namespace", sts.Namespace),
-			zap.String("name", sts.Name),
+		logger.Error(err, "Failed to handle StatefulSet",
+			"namespace", sts.Namespace,
+			"name", sts.Name,
 		)
 		return err
 	}
@@ -42,8 +42,8 @@ func CreateOrUpdateIndexer(ctx context.Context, log *zap.Logger, cr *nodev1alpha
 	return nil
 }
 
-func CreateOrUpdateConfig(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Indexer, rc client.Client) error {
-
+func CreateOrUpdateConfig(ctx context.Context, cr *nodev1alpha1.Indexer, rc client.Client) error {
+	logger := log.FromContext(ctx)
 	// Define a new config
 	cm, err := configmapForIndexer(cr, rc)
 	if err != nil {
@@ -51,10 +51,9 @@ func CreateOrUpdateConfig(ctx context.Context, log *zap.Logger, cr *nodev1alpha1
 	}
 
 	if err = k8s.HandleConfigmapUpdate(ctx, rc, cm, nodev1alpha1.WaitReadyTimeout); err != nil {
-		log.Error("Failed to handle ConfigMap",
-			zap.Error(err),
-			zap.String("namespace", cm.Namespace),
-			zap.String("name", cm.Name),
+		logger.Error(err, "Failed to handle ConfigMap",
+			"namespace", cm.Namespace,
+			"name", cm.Name,
 		)
 		return err
 	}
@@ -142,7 +141,7 @@ func statefulSetForIndexer(cr *nodev1alpha1.Indexer, rc client.Client) (*appsv1.
 	}
 
 	// Set Indexer instance as the owner and controller
-	if err := controllerutil.SetControllerReference(cr, sts, rc.Scheme()); err != nil {
+	if err = controllerutil.SetControllerReference(cr, sts, rc.Scheme()); err != nil {
 		return nil, err
 	}
 

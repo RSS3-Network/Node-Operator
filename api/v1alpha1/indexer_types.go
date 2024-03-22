@@ -146,14 +146,11 @@ func (cr *Indexer) PodLabels() map[string]string {
 	return labels.Merge(selectorLabels, nil)
 }
 
-type IndexerParams map[string]runtime.RawExtension
+type IndexerParams runtime.RawExtension
 
 func (cr IndexerParams) Options() *config.Options {
 	option := config.Options{}
-
-	for k, v := range cr {
-		option[k] = v.String()
-	}
+	_ = json.Unmarshal(cr.Raw, &option)
 	return &option
 }
 

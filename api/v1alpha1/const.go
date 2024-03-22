@@ -5,5 +5,5 @@ import "time"
 const (
 	NodeFinalizer               = "node.rss3.io/finalizer"
 	lastAppliedConfigAnnotation = "operator.node.rss3.io/last-applied-configuration"
-	WaitReadyTimeout            = 60 * time.Second
+	WaitReadyTimeout            = 180 * time.Second
 )

@@ -4,42 +4,43 @@ import (
 	"context"
 	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 	"github.com/rss3-network/node-operator/internal/controller/factory/k8s"
-	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func CreateOrUpdateHubService(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Hub, rc client.Client) (*corev1.Service, error) {
+func CreateOrUpdateHubService(ctx context.Context, cr *nodev1alpha1.Hub, rc client.Client) (*corev1.Service, error) {
 	cr = cr.DeepCopy()
+	logger := log.FromContext(ctx)
 
 	svc, err := serviceForHub(cr, rc)
 	if err != nil {
-		log.Error("Failed to define new Service resource for Hub", zap.Error(err))
+		logger.Error(err, "Failed to define new Service resource for Hub")
 		return nil, err
 	}
 
 	return reconcileService(ctx, rc, svc)
 }
 
-func CreateOrUpdateHub(ctx context.Context, log *zap.Logger, cr *nodev1alpha1.Hub, rc client.Client) error {
+func CreateOrUpdateHub(ctx context.Context, cr *nodev1alpha1.Hub, rc client.Client) error {
+	logger := log.FromContext(ctx)
 	// Check if the deployment already exists, if not create a new one
 
 	// Define a new deployment
 	dep, err := deploymentForHub(cr, rc)
 	if err != nil {
-		log.Error("Failed to define new Deployment resource for Hub", zap.Error(err))
+		logger.Error(err, "Failed to define new Deployment resource for Hub")
 		return err
 	}
 
 	if err = k8s.HandleDeployUpdate(ctx, rc, dep, nodev1alpha1.WaitReadyTimeout); err != nil {
-		log.Error("Failed to handle deployment",
-			zap.Error(err),
-			zap.String("namespace", dep.Namespace),
-			zap.String("name", dep.Name),
+		logger.Error(err, "Failed to handle deployment",
+			"namespace", dep.Namespace,
+			"name", dep.Name,
 		)
 		return err
 	}
@@ -200,9 +201,8 @@ func serviceForHub(
 
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        hub.Name,
-			Namespace:   hub.Namespace,
-			Annotations: hub.Annotations,
+			Name:      hub.Name,
+			Namespace: hub.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeClusterIP,
@@ -212,7 +212,6 @@ func serviceForHub(
 			Selector: hub.SelectorLabels(),
 		},
 	}
-
 	// Set the ownerRef for the Service
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/
 	if err := ctrl.SetControllerReference(hub, svc, rc.Scheme()); err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/go-github/v60/github"
-	"go.uber.org/zap"
 	"os"
 	"sync"
 )
@@ -29,8 +28,6 @@ func imageForNode() (string, error) {
 		return fmt.Sprintf("rss3/node:%s", tagCache), nil
 	}
 
-	zap.L().Debug("Unable to find %s environment variable with the image",
-		zap.String("envVar", imageEnvVar))
 	// Get the latest tag from the GitHub repository
 	tag, err := getNewestTag()
 

@@ -3,12 +3,11 @@ package factory
 import (
 	"context"
 	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 func AddFinalizer(ctx context.Context, rc client.Client, instance client.Object) error {
@@ -28,41 +27,40 @@ func RemoveFinalizer(ctx context.Context, rc client.Client, instance client.Obje
 }
 
 func removeFinalizeObjByName(ctx context.Context, rclient client.Client, obj client.Object, name, ns string) error {
+	logger := log.FromContext(ctx)
 	if err := rclient.Get(ctx, types.NamespacedName{Name: name, Namespace: ns}, obj); err != nil {
 		if errors.IsNotFound(err) {
 			return nil
 		}
 		return err
 	}
-	// fast path
+
 	if !controllerutil.ContainsFinalizer(obj, nodev1alpha1.NodeFinalizer) {
 		return nil
 	}
-	controllerutil.RemoveFinalizer(obj, nodev1alpha1.NodeFinalizer)
+	if ok := controllerutil.RemoveFinalizer(obj, nodev1alpha1.NodeFinalizer); ok {
+		logger.Info("removing finalizer",
+			"name", name,
+			"namespace", ns,
+			"kind",
+			obj.GetObjectKind().GroupVersionKind().Kind,
+		)
+	} else {
+		logger.Info("finalizer not found",
+			"name", name,
+			"namespace", ns,
+			"kind",
+			obj.GetObjectKind().GroupVersionKind().Kind,
+		)
+		return nil
+	}
 	return rclient.Update(ctx, obj)
 }
 
 func OnHubDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.Hub) (err error) {
-	if err = removeFinalizeObjByName(ctx, rc, &corev1.Service{}, instance.Name, instance.Namespace); err != nil {
-		return err
-	}
-
-	if err = removeFinalizeObjByName(ctx, rc, &appsv1.Deployment{}, instance.Name, instance.Namespace); err != nil {
-		return err
-	}
-
-	//if err = RemoveOrphanedResource(ctx, rc,)
-	return removeFinalizeObjByName(ctx, rc, instance, instance.Name, instance.Namespace)
+	return removeFinalizeObjByName(ctx, rc, &nodev1alpha1.Hub{}, instance.Name, instance.Namespace)
 }
 
 func OnIndexerDelete(ctx context.Context, rc client.Client, instance *nodev1alpha1.Indexer) (err error) {
-	if err = removeFinalizeObjByName(ctx, rc, &appsv1.StatefulSet{}, instance.Name, instance.Namespace); err != nil {
-		return err
-	}
-
-	if err = removeFinalizeObjByName(ctx, rc, &corev1.ConfigMap{}, instance.Name, instance.Namespace); err != nil {
-		return err
-	}
-
-	return RemoveFinalizer(ctx, rc, instance)
+	return removeFinalizeObjByName(ctx, rc, &nodev1alpha1.Indexer{}, instance.Name, instance.Namespace)
 }

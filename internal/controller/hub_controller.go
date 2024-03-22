@@ -18,10 +18,8 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 	"github.com/rss3-network/node-operator/internal/controller/factory"
-	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,12 +27,17 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sync"
+)
+
+var (
+	hubSync sync.Mutex
 )
 
 // HubReconciler reconciles a Hub object
 type HubReconciler struct {
 	client.Client
-	Log      *zap.Logger
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 }
@@ -53,15 +56,17 @@ type HubReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
 func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.With(zap.String("hub", req.NamespacedName.String()))
+	logger := log.FromContext(ctx)
+	hubSync.Lock()
+	defer hubSync.Unlock()
 
 	hub := &nodev1alpha1.Hub{}
 	if err := r.Get(ctx, req.NamespacedName, hub); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("hub resource not found. Ignoring since object must be deleted")
+			logger.Info("hub resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
-		log.Error("Failed to get hub", zap.Error(err))
+		logger.Error(err, "Failed to get hub")
 		return ctrl.Result{}, err
 	}
 
@@ -69,28 +74,29 @@ func (r *HubReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	// indicated by the deletion timestamp being set.
 	if !hub.GetDeletionTimestamp().IsZero() {
 		if err := factory.OnHubDelete(ctx, r.Client, hub); err != nil {
-			log.Error("Failed to finalize hub", zap.Error(err))
-			return ctrl.Result{}, err
+			logger.Error(err, "Failed to finalize hub")
+			return ctrl.Result{Requeue: true}, nil
 		}
 		return ctrl.Result{}, nil
 	}
 
 	if err := factory.AddFinalizer(ctx, r.Client, hub); err != nil {
-		log.Error("Failed to add finalizer", zap.Error(err))
+		logger.Error(err, "Failed to add finalizer")
 		return ctrl.Result{}, err
 	}
 
 	return reconcileWithDiff(ctx, r.Client, hub, func() (ctrl.Result, error) {
-		if err := factory.CreateOrUpdateHub(ctx, r.Log, hub, r.Client); err != nil {
+		if err := factory.CreateOrUpdateHub(ctx, hub, r.Client); err != nil {
 			return ctrl.Result{}, err
 		}
 
-		if _, err := factory.CreateOrUpdateHubService(ctx, r.Log, hub, r.Client); err != nil {
+		if _, err := factory.CreateOrUpdateHubService(ctx, hub, r.Client); err != nil {
 			return ctrl.Result{}, err
 		}
 
 		if err := r.Status().Update(ctx, hub); err != nil {
-			return ctrl.Result{}, fmt.Errorf("cannot update status for hub: %s: %w", hub.Name, err)
+			logger.Error(err, "Failed to update hub status")
+			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
 	})

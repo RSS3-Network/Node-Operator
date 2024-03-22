@@ -37,7 +37,7 @@ func waitServiceReady(ctx context.Context, rc client.Client, svc *corev1.Service
 	return wait.PollUntilContextTimeout(ctx, time.Second*5, waitDeadline, true, func(ctx context.Context) (bool, error) {
 		var actual corev1.Service
 		if err := rc.Get(ctx, client.ObjectKey{Name: svc.Name, Namespace: svc.Namespace}, &actual); err != nil {
-			return false, fmt.Errorf("cannot fetch actual statefulset: %w", err)
+			return false, fmt.Errorf("cannot fetch actual service: %w", err)
 		}
 
 		return false, nil

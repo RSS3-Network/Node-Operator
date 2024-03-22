@@ -19,12 +19,10 @@ package controller
 import (
 	"context"
 
+	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 )
 
 // BroadcasterReconciler reconciles a Broadcaster object
@@ -47,7 +45,7 @@ type BroadcasterReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
 func (r *BroadcasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	//_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
 

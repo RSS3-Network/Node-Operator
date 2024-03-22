@@ -3,11 +3,9 @@ package factory
 import (
 	"context"
 	"fmt"
-	nodev1alpha1 "github.com/rss3-network/node-operator/api/v1alpha1"
 	"github.com/rss3-network/node-operator/internal/controller/factory/k8s"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -81,8 +79,8 @@ func reconcileService(ctx context.Context, rc client.Client, newSvc *v1.Service)
 	if currentSvc.ResourceVersion != "" {
 		newSvc.ResourceVersion = currentSvc.ResourceVersion
 	}
-	newSvc.Annotations = labels.Merge(currentSvc.Annotations, newSvc.Annotations)
-	newSvc.Finalizers = k8s.MergeFinalizers(currentSvc, nodev1alpha1.NodeFinalizer)
+	newSvc.Annotations = k8s.MergeAnnotations(currentSvc.Annotations, newSvc.Annotations)
+	//newSvc.Finalizers = k8s.MergeFinalizers(currentSvc, nodev1alpha1.NodeFinalizer)
 
 	err = rc.Update(ctx, newSvc)
 	if err != nil {

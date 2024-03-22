@@ -135,10 +135,8 @@ spec:
               network:
                 type: string
               params:
-                additionalProperties:
-                  type: object
-                  x-kubernetes-preserve-unknown-fields: true
                 type: object
+                x-kubernetes-preserve-unknown-fields: true
               worker:
                 type: string
             required:
