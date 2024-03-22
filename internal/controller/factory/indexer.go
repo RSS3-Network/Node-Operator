@@ -10,6 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/json"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -74,6 +75,12 @@ func configmapForIndexer(cr *nodev1alpha1.Indexer, rc client.Client) (*corev1.Co
 		return nil, err
 	}
 
+	options, err := getOptions(cr)
+	if err != nil {
+		return nil, err
+
+	}
+
 	configFile := config.File{
 		Environment: "production",
 		Node: &config.Node{
@@ -81,7 +88,7 @@ func configmapForIndexer(cr *nodev1alpha1.Indexer, rc client.Client) (*corev1.Co
 				Network:    network,
 				Worker:     worker,
 				Endpoint:   cr.Spec.Endpoint,
-				Parameters: cr.Spec.Params.Options(),
+				Parameters: &options,
 			}},
 		},
 	}
@@ -156,6 +163,11 @@ func newPodSpecForIndexer(cr *nodev1alpha1.Indexer) (*corev1.PodSpec, error) {
 		return nil, err
 	}
 
+	options, err := getOptions(cr)
+	if err != nil {
+		return nil, err
+	}
+
 	podSpec := &corev1.PodSpec{
 		Volumes: []corev1.Volume{{
 			Name: "config",
@@ -175,7 +187,7 @@ func newPodSpecForIndexer(cr *nodev1alpha1.Indexer) (*corev1.PodSpec, error) {
 				"--module=indexer",
 				fmt.Sprintf("--indexer.network=%s", cr.Spec.Network),
 				fmt.Sprintf("--indexer.worker=%s", cr.Spec.Worker),
-				fmt.Sprintf("--indexer.parameters=%s", cr.Spec.Params.Options().String()),
+				fmt.Sprintf("--indexer.parameters=%s", options.String()),
 			},
 			VolumeMounts: []corev1.VolumeMount{{
 				Name:      "config",
@@ -185,4 +197,15 @@ func newPodSpecForIndexer(cr *nodev1alpha1.Indexer) (*corev1.PodSpec, error) {
 	}
 
 	return podSpec, nil
+}
+
+func getOptions(cr *nodev1alpha1.Indexer) (config.Options, error) {
+	options := config.Options{}
+
+	err := json.Unmarshal(cr.Spec.Params.Raw, &options)
+	if err != nil {
+		return options, err
+	}
+
+	return options, nil
 }

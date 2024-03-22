@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/rss3-network/node/config"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -42,8 +41,8 @@ type IndexerSpec struct {
 	Worker   string `json:"worker,omitempty"`
 	Endpoint string `json:"endpoint,omitempty"`
 
-	Params      IndexerParams `json:"params,omitempty"`
-	DatabaseRef DatabaseRef   `json:"database"`
+	Params      runtime.RawExtension `json:"params,omitempty"`
+	DatabaseRef DatabaseRef          `json:"database"`
 }
 
 // IndexerStatus defines the observed state of Indexer
@@ -144,14 +143,6 @@ func (cr *Indexer) SelectorLabels() map[string]string {
 func (cr *Indexer) PodLabels() map[string]string {
 	selectorLabels := cr.SelectorLabels()
 	return labels.Merge(selectorLabels, nil)
-}
-
-type IndexerParams runtime.RawExtension
-
-func (cr IndexerParams) Options() *config.Options {
-	option := config.Options{}
-	_ = json.Unmarshal(cr.Raw, &option)
-	return &option
 }
 
 func init() {
