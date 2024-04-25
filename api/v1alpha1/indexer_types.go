@@ -123,7 +123,7 @@ func (cr *Indexer) SetStatusCondition(ctx context.Context, r client.Client, stat
 	meta.SetStatusCondition(&cr.Status.Conditions, cond)
 
 	if err := r.Status().Update(ctx, cr); err != nil {
-		return fmt.Errorf("cannot update status for indexer: %s: %w", cr.Name, err)
+		return fmt.Errorf("cannot update status for indexer: %s: %w, %v %v", cr.Name, err, cr.Status.Conditions, cond)
 	}
 	return nil
 }
