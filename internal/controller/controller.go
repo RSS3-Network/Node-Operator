@@ -17,16 +17,20 @@ type ObjectWithSpecPatch interface {
 
 func reconcileWithDiff(ctx context.Context, rc client.Client, obj ObjectWithSpecPatch, cb func() (ctrl.Result, error)) (ctrl.Result, error) {
 	specDiff := obj.SpecDiff()
+	var status nodev1alpha1.UpdateStatus
+
 	if specDiff {
-		if err := obj.SetStatusCondition(ctx, rc, nodev1alpha1.UpdateStatusPending, nil); err != nil {
-			return ctrl.Result{}, fmt.Errorf("cannot update status for cluster: %w", err)
+		status = nodev1alpha1.UpdateStatusPending
+		if err := obj.SetStatusCondition(ctx, rc, status, nil); err != nil {
+			return ctrl.Result{}, fmt.Errorf("cannot update status %s for cluster: %w", status, err)
 		}
 	}
 	result, err := cb()
 
 	if err != nil {
-		if err := obj.SetStatusCondition(ctx, rc, nodev1alpha1.UpdateStatusFailed, err); err != nil {
-			return ctrl.Result{}, fmt.Errorf("cannot update status for cluster: %w", err)
+		status = nodev1alpha1.UpdateStatusFailed
+		if err = obj.SetStatusCondition(ctx, rc, status, err); err != nil {
+			return ctrl.Result{}, fmt.Errorf("cannot update status %s for cluster: %w", status, err)
 		}
 		return result, fmt.Errorf("callback error: %w", err)
 	}
